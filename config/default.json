@@ -2,25 +2,28 @@
 { 
 "ServerInfo": {
     "ServerConfig": {
-      "gitRepo": "http://wintableau"   
+      "gitRepo": "https://raw.githubusercontent.com/russch/tableau-sdlc-sample/master/reports/"   
     }
 },
     "Sites": [
         {
             "server": "http://wintableau",
-            "site": "RedCorp",
+            "siteName": "RedCorp",
+            "siteId": "RedCorp",
             "database": "RedDB",
             "users": ""
         },
         {
             "server": "http://wintableau",
-            "site": "WhiteCorp",
+            "siteName": "WhiteCorp",
+            "siteId": "WhiteCorp",
             "database": "WhiteDB",
             "users": ""
         },
         {
             "server": "http://wintableau",
-            "site": "BlueCorp",
+            "siteName": "BlueCorp",
+            "siteId": "BlueCorp",
             "database": "BlueDB",
             "users": ""
         }         
