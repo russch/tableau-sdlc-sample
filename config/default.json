@@ -1,0 +1,28 @@
+
+{ 
+"ServerInfo": {
+    "ServerConfig": {
+      "gitRepo": "http://wintableau"   
+    }
+},
+    "Sites": [
+        {
+            "server": "http://wintableau",
+            "site": "RedCorp",
+            "database": "RedDB",
+            "users": ""
+        },
+        {
+            "server": "http://wintableau",
+            "site": "WhiteCorp",
+            "database": "WhiteDB",
+            "users": ""
+        },
+        {
+            "server": "http://wintableau",
+            "site": "BlueCorp",
+            "database": "BlueDB",
+            "users": ""
+        }         
+    ]
+}

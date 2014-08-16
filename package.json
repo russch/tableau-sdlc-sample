@@ -1,0 +1,12 @@
+{
+  "name": "tableau-sdlc-sampler",
+  "description": "SDLC example for Tableau",
+  "version": "1.0.0",
+  "dependencies": {
+    "node-jsxml": "0.x",
+    "config": "1.0.x",
+	"exec": "0.1.x",
+    "node-random": "1.0.x"       
+      
+  }
+}

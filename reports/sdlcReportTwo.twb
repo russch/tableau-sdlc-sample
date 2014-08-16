@@ -1,0 +1,230 @@
+<?xml version='1.0' encoding='utf-8' ?>
+
+<workbook source-platform='win' version='8.3' xmlns:user='http://www.tableausoftware.com/xml/user'>
+  <!-- build 8200.14.0720.2105                                -->
+  <preferences>
+  </preferences>
+  <datasources>
+    <datasource caption='databaseTable (templateSDLC)' inline='true' name='sqlserver.41867.434504375000' version='8.3'>
+      <connection authentication='sspi' class='sqlserver' dbname='templateSDLC' odbc-native-protocol='yes' server='wintableau'>
+        <relation name='databaseTable' table='[dbo].[databaseTable]' type='table' />
+        <metadata-records>
+          <metadata-record class='column'>
+            <remote-name>pk</remote-name>
+            <remote-type>3</remote-type>
+            <local-name>[pk]</local-name>
+            <parent-name>[databaseTable]</parent-name>
+            <remote-alias>pk</remote-alias>
+            <ordinal>1</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>10</precision>
+            <contains-null>false</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQL_INTEGER&quot;</attribute>
+              <attribute datatype='string' name='DebugWireType'>&quot;SQL_C_SLONG&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>dimenson1</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[dimenson1]</local-name>
+            <parent-name>[databaseTable]</parent-name>
+            <remote-alias>dimenson1</remote-alias>
+            <ordinal>2</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <width>50</width>
+            <contains-null>true</contains-null>
+            <padded-semantics>true</padded-semantics>
+            <collation flag='2147483649' name='LEN_RUS_S2_VWIN' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQL_VARCHAR&quot;</attribute>
+              <attribute datatype='string' name='DebugWireType'>&quot;SQL_C_CHAR&quot;</attribute>
+              <attribute datatype='string' name='TypeIsVarchar'>&quot;true&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>dimension2</remote-name>
+            <remote-type>129</remote-type>
+            <local-name>[dimension2]</local-name>
+            <parent-name>[databaseTable]</parent-name>
+            <remote-alias>dimension2</remote-alias>
+            <ordinal>3</ordinal>
+            <local-type>string</local-type>
+            <aggregation>Count</aggregation>
+            <width>50</width>
+            <contains-null>true</contains-null>
+            <padded-semantics>true</padded-semantics>
+            <collation flag='2147483649' name='LEN_RUS_S2_VWIN' />
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQL_VARCHAR&quot;</attribute>
+              <attribute datatype='string' name='DebugWireType'>&quot;SQL_C_CHAR&quot;</attribute>
+              <attribute datatype='string' name='TypeIsVarchar'>&quot;true&quot;</attribute>
+            </attributes>
+          </metadata-record>
+          <metadata-record class='column'>
+            <remote-name>measure1</remote-name>
+            <remote-type>3</remote-type>
+            <local-name>[measure1]</local-name>
+            <parent-name>[databaseTable]</parent-name>
+            <remote-alias>measure1</remote-alias>
+            <ordinal>4</ordinal>
+            <local-type>integer</local-type>
+            <aggregation>Sum</aggregation>
+            <precision>10</precision>
+            <contains-null>true</contains-null>
+            <attributes>
+              <attribute datatype='string' name='DebugRemoteType'>&quot;SQL_INTEGER&quot;</attribute>
+              <attribute datatype='string' name='DebugWireType'>&quot;SQL_C_SLONG&quot;</attribute>
+            </attributes>
+          </metadata-record>
+        </metadata-records>
+      </connection>
+      <aliases enabled='yes' />
+      <column datatype='integer' name='[Number of Records]' role='measure' type='quantitative' user:auto-column='numrec'>
+        <calculation class='tableau' formula='1' />
+      </column>
+      <column caption='Dimension2' datatype='string' name='[dimension2]' role='dimension' type='nominal'>
+      </column>
+      <column caption='Dimenson1' datatype='string' name='[dimenson1]' role='dimension' type='nominal'>
+      </column>
+      <column caption='Measure1' datatype='integer' name='[measure1]' role='measure' type='quantitative'>
+      </column>
+      <column caption='Pk' datatype='integer' hidden='true' name='[pk]' role='measure' type='quantitative'>
+      </column>
+      <layout dim-ordering='alphabetic' dim-percentage='0.5' measure-ordering='alphabetic' measure-percentage='0.4' show-structure='true' />
+      <semantic-values>
+        <semantic-value key='[Country].[Name]' value='&quot;United States&quot;' />
+      </semantic-values>
+    </datasource>
+  </datasources>
+  <worksheets>
+    <worksheet name='Sheet 1'>
+      <layout-options>
+        <title>
+          <formatted-text>
+            <run>&lt;</run>
+            <run>[sqlserver.41867.434504375000].[none:dimenson1:nk]</run>
+            <run>&gt;</run>
+            <run>&lt;</run>
+            <run>Sheet Name</run>
+            <run>&gt;</run>
+          </formatted-text>
+        </title>
+      </layout-options>
+      <table>
+        <view>
+          <datasources>
+            <datasource caption='databaseTable (templateSDLC)' name='sqlserver.41867.434504375000' />
+          </datasources>
+          <datasource-dependencies datasource='sqlserver.41867.434504375000'>
+            <column caption='Dimension2' datatype='string' name='[dimension2]' role='dimension' type='nominal'>
+            </column>
+            <column caption='Dimenson1' datatype='string' name='[dimenson1]' role='dimension' type='nominal'>
+            </column>
+            <column caption='Measure1' datatype='integer' name='[measure1]' role='measure' type='quantitative'>
+            </column>
+            <column-instance column='[dimension2]' derivation='None' name='[none:dimension2:nk]' pivot='key' type='nominal' />
+            <column-instance column='[dimenson1]' derivation='None' name='[none:dimenson1:nk]' pivot='key' type='nominal' />
+            <column-instance column='[measure1]' derivation='Sum' name='[sum:measure1:qk]' pivot='key' type='quantitative' />
+          </datasource-dependencies>
+          <aggregation value='true' />
+        </view>
+        <style>
+        </style>
+        <panes>
+          <pane>
+            <view>
+              <breakdown value='on' />
+            </view>
+            <mark class='Automatic' />
+            <encodings>
+              <color column='[sqlserver.41867.434504375000].[sum:measure1:qk]' />
+              <size column='[sqlserver.41867.434504375000].[sum:measure1:qk]' />
+              <text column='[sqlserver.41867.434504375000].[none:dimenson1:nk]' />
+              <text column='[sqlserver.41867.434504375000].[none:dimension2:nk]' />
+            </encodings>
+            <style>
+              <style-rule element='mark'>
+                <format attr='mark-labels-show' value='true' />
+                <format attr='mark-labels-cull' value='true' />
+                <format attr='mark-labels-line-first' value='true' />
+                <format attr='mark-labels-line-last' value='true' />
+                <format attr='mark-labels-range-min' value='true' />
+                <format attr='mark-labels-range-max' value='true' />
+                <format attr='mark-labels-mode' value='all' />
+                <format attr='mark-labels-range-scope' value='pane' />
+                <format attr='mark-labels-range-field' value='' />
+              </style-rule>
+            </style>
+          </pane>
+        </panes>
+        <rows></rows>
+        <cols></cols>
+      </table>
+    </worksheet>
+  </worksheets>
+  <windows>
+    <window class='schema' source-height='-1' />
+    <window auto-hidden='0' class='worksheet' maximized='1' name='Sheet 1'>
+      <cards>
+        <edge name='left'>
+          <strip size='160'>
+            <card type='pages' />
+            <card type='filters' />
+            <card type='marks' />
+            <card pane-specification-id='0' param='[sqlserver.41867.434504375000].[sum:measure1:qk]' type='color' />
+          </strip>
+        </edge>
+        <edge name='top'>
+          <strip size='31'>
+            <card type='columns' />
+          </strip>
+          <strip size='31'>
+            <card type='rows' />
+          </strip>
+          <strip size='31'>
+            <card type='title' />
+          </strip>
+        </edge>
+      </cards>
+      <highlight>
+        <color-one-way>
+          <field>[sqlserver.41867.434504375000].[sum:measure1:qk]</field>
+        </color-one-way>
+      </highlight>
+    </window>
+  </windows>
+  <thumbnails>
+    <thumbnail height='192' name='Sheet 1' width='192'>
+      iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAYAAABS3GwHAAAACXBIWXMAAA7EAAAOxAGVKw4b
+      AAAFNklEQVR4nO3cy24bZRyG8XdmbCeOnUltt5AmFiVtArSAhKquKoGQEBISqy7Zwl2w4h6Q
+      egWsUbeABBuKhFClHsSh9KCmoUmbOHEcJ7ZrxzMsQKWoVVSUaSv8Pr/d+D/6vln4kc8O0jRN
+      BZgKn/cFAM8TAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcBabr8LpGmq4XCYxbUA
+      z9y+A+h2u5KkMOTBBP8/+w5AkoIg0GdffKxW/24WywGZeGX6tMI42vOcTAKQpBubP2mslNdi
+      49fHzl8+eEK3Gr8oLs8pGqyoeb+X1dbAY8WVabWWOqrUpxSGwSPztVub2QWgsKT3X/9IE/Gs
+      llevqDoeKQlyardXNUh7ag9CnTrxiSbVUqShKsWSPv/6U/X4OQ6eols/Lura96m6GlMx6SiJ
+      IuWDSPcVqp+EGQaQ7Ghp87Zy24taba9rLWgpyFV0dGpGa+2m7idl5dOeGu0ljUehbt77QwPu
+      /HjKKrOxdnYSHTo0qcHWmPKlvNpXN9RRqNLUWIYBSPrq0tlHbrtee1XL61eVZLkR8ISOnp57
+      6OgFSVJ/vqqeCoqn8tkGcKA0qyjYVW/QVZomKuRjbXdWVS1Pq7HNC2Q8e0sXlxXXqyrkEiVB
+      pGQwVLk2oULw12uC7AIIKnr3xHuKywvqd1YUJHe10i1qrlpXs3lZ5658mdlWwJPauL2pjTvb
+      yhVDrd/pqFiZ0KkPjz2YZxdAuq2+Ym01L2u5dVP9Yar82LR+X7mntc3fMtsG+C9q9VjtbqCx
+      3FDTC+Mq10oKgn/eEcrwKdBQF66fU7u9qM5uP7tlgX2on6zvOc8wgET3mtezWw54Bvj+AqwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwRAKwR
+      AKwRAKzlnvcFAE/L3MSc3po+uec5BICRNV6MtLW5piNH64rC4JH5tau3CQCj7Ydvzuu7QaJm
+      OqkDybqGuYKKQV7tNKdOkiMAjLYjczNqbA20MDuj7sakinFRdy/e0LryqlYnCQCj7e0P3nno
+      6LgkqfPGMbVU0uFakQAw2i58e17hi0f00kxFuaSvqFhSuXZQE3/PCQAjbbmxrZ07P+vapUjp
+      sKtCuaYzZ04/mBMARtr88WPa7XXU6EQa322pcKj+rzkBYKQdf3N+zzmfBMMaAcAaAcAaAcAa
+      AcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAaAcAa
+      AcAaAcAaAcAaAcAaAcAaAcBaZn+Oe7j4msajOKvlgH3L7cba2hjuec6fR/X9JtFDtMAAAAAA
+      SUVORK5CYII=
+    </thumbnail>
+  </thumbnails>
+</workbook>
