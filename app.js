@@ -73,9 +73,9 @@ function processSites() {
     } else {
         console.log("All sites created."); 
         // Get all sites on server to extract LUID for newly created sites.
-        tabrat.sites().then (function (updatedSites) {
-            console.log(updatedSites);
-        });
+       // tabrat.sites().then (function (updatedSites) {
+            //console.log(updatedSites);
+    //    });
     }
 
 }
@@ -130,9 +130,36 @@ var getReports = function ()
 
 
 function createSite(site, callback) {
-    tabrat.createsite(site.siteName, site.siteId).then ( function (message) {
-    console.log (site.siteName + ": " + message);
-    // back to processSites()
-    return callback(null);
-    });
+    tabrat.createsite(site.siteName, site.siteId).then ( 
+        function (luid) {
+        console.log (site.siteName + ": " + luid);
+        // save site luid for later
+        injectSiteLuid(site.siteName, luid);    
+        // back to processSites()
+        return callback(null);
+        }, 
+            function (error) {
+                console.log(error);
+                return callback (null);
+            }
+                                                       
+   );
 }
+
+function injectSiteLuid(siteName, luid)
+{
+    console.log("in", siteName, luid);
+    for (key in _sites) 
+    {
+        if(_sites[key].siteName == siteName) {
+            _sites[key].siteLuid = luid;
+            
+        }
+        else{console.log("no");}
+            
+    }
+    console.log(_sites);
+    return null;
+    
+}
+

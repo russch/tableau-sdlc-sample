@@ -13,11 +13,11 @@
 //
 
 var _scheme = "http://"
-var _host = "localhost"
+var _host = "winTableau"
 var _port = 80
 var _site = "Default"
 var _admin = "admin"
-var _passwd = "admin"
+var _passwd = "adminpw"
 var _binfolder = "C:\\Program Files\\Tableau\\Tableau Server\\8.2\\bin"
 
 function settings( dictionnary ) {
@@ -139,7 +139,16 @@ function createsite( sitename, contenturl, adminmode, userquota, storagequotamb 
 		xml2js.parseString( body, function( err, result ) {
 		    if( err ) deferred.reject( "creation unsuccesful" )
 		    else {
-		    	sites().then( function() { deferred.resolve( "creation succesful" ) } )
+		    	_siteLuid = result.tsResponse.site;
+                if (typeof _siteLuid == 'undefined') {
+                    // no site node, therefore something went wrong. Tell us what is.
+                    deferred.reject( "creation unsuccesful - " + JSON.stringify(result.tsResponse.error[0].detail,null).replace(/[\"\[\]]+/g, "")) 
+                 }
+                else { 
+                    // all is well, return site Luid as the result.
+                    _siteLuid = JSON.stringify(_siteLuid[0].$.id, null, 2).replace(/[\"]+/g, "");      
+                    sites().then( function() { deferred.resolve(_siteLuid) } )
+                }
 		    }
 		})
 	} )
