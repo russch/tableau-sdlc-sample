@@ -2,47 +2,55 @@
 process.env.NODE_ENV = "default";
 process.env.NODE_CONFIG_DIR = "config";
 
-//modules ==========================================
 
-
-
-
-
-// Modules used for uploading files, writing to the file system, and publishing to Tableau
+// ============== Modules 
 var exec = require('exec');
 var config = require('config');
 var github = require('octonode');
 var request = require("request");
 var fs = require('fs');
 var Q = require( "q" );
-
+var queue = require('queue');
 // tabrat reference
 var tabrat = require( "./tabrat" );
+
+// Before we do anything, let's attempt to exit gracefully when necessary.
+process.on('exit', function(code, signal) {
+    console.log("Cleaning up temp files and exiting.");
+    //Cleanup logic here
+    fs.readdir("./downloaded-reports", function (err, files) {
+        if(err) throw err;
+        files.forEach(function(file) {
+            console.log(path+file);
+            fs.unlinkSync(path+file, function(err, stats) {
+                console.log(stats);
+            });
+        });
+    });
+});
 
 //location of the git repo
 var appConfig = config.get('ServerInfo');
 var githubURI = appConfig.get('ServerConfig.gitRepo'); 
 
+                
 // Sites to be created
 var _sites = config.get('Sites');
-var _sitesQueue = _sites; // Queue of sites we'll process by popping values out of the array as they are created
-
-console.log("Count of sites to provision: " + _sites.length.toString());
-
-
-
-// Before we do anything, let's attempt to keep phantomJS instances from hanging around
-// It seems they don't always go away gracefully. 
-process.on('exit', function(code, signal) {
-    console.log("Cleaning up temp files and exiting.");
-    //Cleanup logic here
-});
-
-
-var client = github.client();
+var _sitesQueue = JSON.parse( JSON.stringify( _sites) ); // Queue of sites we'll process by popping values out of the array as they are created
+ 
+// Will contain an array representing reports to be pulled from Github and saved locally
 var reports = [];
 
-// assign tabrat settings
+// Github - pull reports down to the local machine for modification
+var client = github.client();
+
+// load user lists for each site so we can add them once sites are created
+var users = [];
+
+// used for queing jobs
+var q = queue();
+
+// assign initial tabrat settings
 settings = {
 	"host" : "winTableau",
 	"port" : 80,
@@ -54,8 +62,14 @@ settings = {
 };
 tabrat.settings( settings );
 
+// ====================== Logic
 
-//  BEGIN HERE: signin
+// Start downloading reports from Github so they're ready to modify
+getReports();
+
+
+
+//  Syncronous stuff begins HERE: signin, then process sites and users
 tabrat.signin().then( function( token ) {
 	console.log("Logged in: ", token);
     // create sites
@@ -72,10 +86,51 @@ function processSites() {
         createSite(site, processSites);
     } else {
         console.log("All sites created."); 
-        // Get all sites on server to extract LUID for newly created sites.
-       // tabrat.sites().then (function (updatedSites) {
-            //console.log(updatedSites);
-    //    });
+
+        // begin adding users to each site by using a queue.
+        // Forced to use an immediate function to scope the siteLuid/siteName/user variables correctly: http://stackoverflow.com/questions/13221769/node-js-how-to-pass-variables-to-asynchronous-callbacks
+
+        // Loop throuh each site
+        for (key in _sites) {
+            // user list, site name and site ID to work through
+            (function (filename, site, siteLuid) {
+                     
+                    // Get array of users to process from the filename
+                    administerUsers(filename, site, function (err, usersToProcess) {
+                        var userList = usersToProcess;
+                        // Login to the site we need to add users to
+                        var settings = {
+                                "host" : "winTableau",
+                                "port" : 80,
+                                "scheme" : "http://",
+                                "site" : site,
+                                "user" : "admin",
+                                "passwd" : "adminpw",
+                                "binfolder" : "C:\\Program Files\\Tableau\\Tableau Server\\8.2\\bin"
+                        };
+                        tabrat.settings( settings );
+                        tabrat.signin().then (function (sitetoken) {  
+                            for (var i=0; i < userList.length; i++) {      
+                                (function (user, site, siteLuid) {
+                                        q.push(function (cb) {
+                                            tabrat.createuser(user, siteLuid).then( function(result) {
+                                                console.log("Created User: " + result);
+                                                cb();
+                                            });
+                                         });
+                                   }) (userList[i], site, siteLuid, i);
+                               // Begin processing queue as soon as there's stuff in it. 
+                               // We'll add additional jobs from other sites as the queue drains
+                               if (q.length == userList.length) startQueue()     
+                            } 
+                        }); 
+                    });
+
+            })(_sites[key].users, _sites[key].siteName, _sites[key].siteLuid);
+
+        }
+
+                  
     }
 
 }
@@ -85,7 +140,7 @@ function processSites() {
 
 // Helper Functions
 
-var getReports = function ()
+function getReports  ()
 {
     // What reports need to be brought down locally?
     client.get('/repos/russch/tableau-sdlc-sample/contents/reports', {}, function (err, status, body, headers) {
@@ -120,20 +175,14 @@ var getReports = function ()
     });
 }
 
-        
-                // print sites
-               /* tabrat.sites().then (function (sites) {
-                    console.log(sites);
-                });*/
-
-
-
-
-function createSite(site, callback) {
+function createSite(site, callback) 
+{
+    // tell Tableau to create a site
     tabrat.createsite(site.siteName, site.siteId).then ( 
         function (luid) {
-        console.log (site.siteName + ": " + luid);
+        console.log ("Site Created: " + site.siteName + " -  " + luid);
         // save site luid for later
+          
         injectSiteLuid(site.siteName, luid);    
         // back to processSites()
         return callback(null);
@@ -148,18 +197,35 @@ function createSite(site, callback) {
 
 function injectSiteLuid(siteName, luid)
 {
-    console.log("in", siteName, luid);
+   
+    // Record the new site Luid associated with the sites that have been created
     for (key in _sites) 
     {
         if(_sites[key].siteName == siteName) {
-            _sites[key].siteLuid = luid;
-            
-        }
-        else{console.log("no");}
-            
+            _sites[key].siteLuid = luid;            
+        }   
     }
-    console.log(_sites);
-    return null;
     
+}
+
+// take a username file and sitename and create an array of users that need to be loaded for the site
+var administerUsers = function(file, site, callback)
+{
+    fs.readFile(file, function(err, data) {
+        if(err) throw err;
+        var array = data.toString().split("\n");
+        callback( null, array);
+    });
+}
+
+var startQueue = function () {
+    
+        q.start(function(err) {
+            tabrat.signout().then( function (){
+                console.log("logged out of Tableau");
+                console.log('All users created.');
+                process.exit(); 
+            });
+        });
 }
 

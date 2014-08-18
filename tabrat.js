@@ -15,7 +15,7 @@
 var _scheme = "http://"
 var _host = "winTableau"
 var _port = 80
-var _site = "Default"
+var _site = ""
 var _admin = "admin"
 var _passwd = "adminpw"
 var _binfolder = "C:\\Program Files\\Tableau\\Tableau Server\\8.2\\bin"
@@ -26,7 +26,7 @@ function settings( dictionnary ) {
 			case "scheme": _scheme = dictionnary[ "scheme" ]
 			case "host": _host = dictionnary[ "host" ]
 			case "port": _port = dictionnary[ "port" ]
-			case "site": _site = dictionnary[ "site" ]
+			case "site": _site = (dictionnary[ "site" ] == 'Default' ? "" : dictionnary["site"] )
 			case "user": _admin = dictionnary[ "user" ]
 			case "passwd": _passwd = dictionnary[ "passwd" ]
 			case "binfolder": _binfolder = dictionnary[ "binfolder" ]
@@ -106,7 +106,7 @@ function signin() {
 	var deferred = Q.defer()
 	message = "<tsRequest> \
 		<credentials name=\"" + _admin + "\" password=\"" + _passwd + "\" > \
-			<site contentUrl=\"\" /> \
+			<site contentUrl=\"" + _site + "\" /> \
 		</credentials> \
 	</tsRequest>"
 	dopost( "/api/2.0/auth/signin", message, function( error, body ) {
@@ -115,6 +115,11 @@ function signin() {
 		    	_token = result.tsResponse.credentials[ 0 ].$.token
 		    	deferred.resolve( _token )
 		    }
+            else
+            {
+                console.log(err);
+            }
+            
 		})
 	} )
 	return deferred.promise
@@ -122,8 +127,51 @@ function signin() {
 
 exports.signin = signin
 
+
+
+function signout() {
+	var deferred = Q.defer()
+	message = ""
+	dopost( "/api/2.0/auth/signout", message, function( error, body ) {
+		xml2js.parseString( body, function( err, result ) {
+		    if( !err ) {
+		    	deferred.resolve(1)
+		    }
+            else
+            {
+                console.log(err);
+            }
+            
+		})
+	} )
+	return deferred.promise
+}
+
+exports.signout = signout
+
+function createuser (userName, siteLuid) {
+	var deferred = Q.defer()
+	message = "<tsRequest> \
+		<user name=\"" + userName + "\" role=\"Interactor\" publish=\"False\" contentAdmin=\"False\" suppressGettingStarted=\"True\"" +
+		"/> </tsRequest>";
+    dopost("/api/2.0/sites/" + siteLuid + "/users/", message, function( error, body ) {
+
+		xml2js.parseString( body, function( err, result ) {
+		    if( err ) deferred.reject( "creation unsuccesful" )
+		    else {
+		    	var _userId = result.tsResponse.user;
+                   _userId = JSON.stringify(_userId[0].$.id, null, 2).replace(/[\"]+/g, ""); 
+                   users().then( function() { deferred.resolve(_userId) } )
+                }
+
+		    });
+		});
+    return deferred.promise
+	} 
+
+exports.createuser = createuser
+
 function createsite( sitename, contenturl, adminmode, userquota, storagequotamb ) {
-	//console.log( "Creating site " + sitename )
 	var deferred = Q.defer()
 	message = "<tsRequest> \
 		<site name=\"" + sitename + "\" \
@@ -139,7 +187,7 @@ function createsite( sitename, contenturl, adminmode, userquota, storagequotamb 
 		xml2js.parseString( body, function( err, result ) {
 		    if( err ) deferred.reject( "creation unsuccesful" )
 		    else {
-		    	_siteLuid = result.tsResponse.site;
+                var _siteLuid = result.tsResponse.site;
                 if (typeof _siteLuid == 'undefined') {
                     // no site node, therefore something went wrong. Tell us what is.
                     deferred.reject( "creation unsuccesful - " + JSON.stringify(result.tsResponse.error[0].detail,null).replace(/[\"\[\]]+/g, "")) 

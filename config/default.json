@@ -11,21 +11,24 @@
             "siteName": "RedCorp",
             "siteId": "RedCorp",
             "database": "RedDB",
-            "users": ""
-        },
+            "users": "./users/redUsers.txt",
+            "siteLuid": ""
+        }, 
         {
             "server": "http://wintableau",
             "siteName": "WhiteCorp",
             "siteId": "WhiteCorp",
             "database": "WhiteDB",
-            "users": ""
+            "users": "./users/whiteUsers.txt",
+            "siteLuid": ""            
         },
         {
             "server": "http://wintableau",
             "siteName": "BlueCorp",
             "siteId": "BlueCorp",
             "database": "BlueDB",
-            "users": ""
-        }         
+            "users": "./users/blueUsers.txt",
+            "siteLuid": ""            
+        }          
     ]
 }
