@@ -7,7 +7,8 @@
 },
     "Sites": [
         {
-            "server": "http://wintableau",
+            "server": "wintableau",
+            "protocol" "http",
             "siteName": "RedCorp",
             "siteId": "RedCorp",
             "database": "RedDB",
@@ -15,16 +16,16 @@
             "siteLuid": ""
         }, 
         {
-            "server": "http://wintableau",
-            "siteName": "WhiteCorp",
+            "server": "wintableau",
+            "protocol" "http",
             "siteId": "WhiteCorp",
             "database": "WhiteDB",
             "users": "./users/whiteUsers.txt",
             "siteLuid": ""            
         },
         {
-            "server": "http://wintableau",
-            "siteName": "BlueCorp",
+            "server": "wintableau",
+            "protocol" "http",
             "siteId": "BlueCorp",
             "database": "BlueDB",
             "users": "./users/blueUsers.txt",
