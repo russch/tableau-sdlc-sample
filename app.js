@@ -9,37 +9,44 @@ var config = require('config');
 var github = require('octonode');
 var request = require("request");
 var fs = require('fs');
+path = require('path');
 var Q = require( "q" );
 var queue = require('queue');
 var jsxml = require("node-jsxml");
 // tabrat reference
 var tabrat = require( "./tabrat" );
 
-// Before we do anything, let's attempt to exit gracefully when necessary.
-process.on('exit', function(code, signal) {
-    console.log("Cleaning up temp files and exiting.");
-    //Cleanup logic here
-/*    fs.readdir("./downloaded-reports/", function (err, files) {
-        console.log(files);
-        if(err) throw err;
-        files.forEach(function(file) {
-            console.log(path+file);
-            fs.unlinkSync(path+file, function(err, stats) {
-                console.log(stats);
-            });
-        });
-    });*/
-});
 
 //location of the git repo
 var appConfig = config.get('ServerInfo');
 var githubURI = appConfig.get('ServerConfig.gitRepo'); 
-
-                
+// Used by TabCmd later on.
+var admin = { username: "admin", password: "adminpw"};
+ 
+var queueStarted=false;
 // Sites to be created
 var _sites = config.get('Sites');
 var _sitesQueue = JSON.parse( JSON.stringify( _sites) ); // Queue of sites we'll process by popping values out of the array as they are created
  
+// Before we do anything, let's attempt to exit gracefully when necessary.
+process.on('exit', function(code, signal) {
+    console.log("Cleaning up temp files and exiting.");
+    //Cleanup logic here
+    var path = "./downloaded-reports/";
+    
+    // Clean updated-reports
+    for (key in _sites) {
+        rmDir("./updated-reports/" + _sites[key].siteName);
+    }  
+    
+    // Clean downloaded reports
+    var files = fs.readdirSync(path);
+        files.forEach(function(file) {
+            console.log(path + file);
+            fs.unlinkSync(path+file);
+        });
+    
+});
 
 // Github - pull reports down to the local machine for modification
 var client = github.client();
@@ -62,22 +69,26 @@ settings = {
 };
 tabrat.settings( settings );
 
+//=======================================
 // ====================== Logic
+// First, create all sites & users: "Provisioning": processSites()
+// Next, download all "template" reports from source control that will be personalized on a per-site basis "SDLC": getReports()
+// Modify said reports, swiching their data source connection string to a site-specific user database "SDLC": parseReports()
+// Finally, publish each report to the appropriate Tableau Server & Site "SDLC": marshalWorkbooks()
 
-// Start downloading reports from Github so they're ready to modify
-//getReports();
 
-
-setTimeout(function(){parseReports();},1000);
-
-//  Syncronous stuff begins HERE: signin, then process sites and users
-/*tabrat.signin().then( function( token ) {
+//  "Provisioning" stuff begins HERE: signin, then process sites and users
+tabrat.signin().then( function( token ) {
 	console.log("Logged in: ", token);
     // create sites
     processSites();
-  });  */
-    
+  });  
 
+
+
+// ============================================================
+
+// Coordinates the creation of sites and users by calling other functions
 function processSites() {
     // Keep calling myself until queue of sites to be created is exhausted
 
@@ -87,7 +98,7 @@ function processSites() {
         createSite(site, processSites);
     } else {
         console.log("All sites created."); 
-
+            
         // begin adding users to each site by using a queue.
         // Forced to use an immediate function to scope the siteLuid/siteName/user variables correctly: http://stackoverflow.com/questions/13221769/node-js-how-to-pass-variables-to-asynchronous-callbacks
 
@@ -136,20 +147,21 @@ function processSites() {
 
 }
 
-// ================== Helper Functions
-
-function getReports  ()
-{
+// Download reports from source control and save localy in /downloaded-reports
+function getReports  (){
     // Will contain an array representing reports to be pulled from Github and saved locally
     var reports = [];   
     
     // What reports need to be brought down locally?
     client.get('/repos/russch/tableau-sdlc-sample/contents/reports', {}, function (err, status, body, headers) {
+        // Used to know when we're done.
+        var fileCounter = 0;
         reports = body;
         // request each file and save locally
-        console.log("Reports to process: ", reports.length);
+       console.log("==============================================");
+        console.log("Reports to download: ", reports.length);
         for (report in reports) {
-            (function (report) 
+            (function (report, reportCount) 
                 {
                     var reportName = githubURI + report.name.toString(); 
                     console.log(reportName); 
@@ -158,24 +170,54 @@ function getReports  ()
                         url: reportName
                     },
                         function (err, response, body) {
-                            console.log("Request Callback", reportName);
                             if (err) {
-                                console.log(response);
+                                console.log(err, response);
                                 return;
-                            } else {
-                                fs.writeFile('./downloaded-reports/' + report.name.toString(), body, function (err) {
-                                              if (err) console.log(err);
-                                              console.log("File " + report.name.toString() + " saved.");
-                                            });
+                            } 
+                            else {
+                                try {
+                                    fs.writeFileSync('./downloaded-reports/' + report.name.toString(), body);
+                                    }
+                                catch (err)
+                                    { console.log(err);}
+                                console.log("File " + report.name.toString() + " saved."); 
+                                fileCounter++;
+                             }
+                            // If we're done, called parseReports();
+                            if (fileCounter==reportCount) {
+                            console.log("==============================================");
+                            parseReports();
                             }
-                        }
-                    );
+                            
+                        });
 
-                }) (reports[report]);
+                }) (reports[report], reports.length);
+            
         }
     });
 }
 
+// Gather reports in /downloaded-reports folder and stick in an array for processing later
+function loadReports (callback) {
+    var path = "./downloaded-reports/";
+    var reports = [];
+
+    
+    fs.readdir(path, function (err, files) {
+        if(err) throw err;
+        files.forEach(function(file) {
+            fs.readFile(path+file, function(err, data) {
+            if (err) throw err;    
+            reports.push({ report: file, XML: data.toString()});    
+            // Callback when all files processed  
+            if  (files.length == reports.length) callback(err, reports);
+            });  
+        });
+    });
+
+}
+
+// Update reports in array  on a per-site basis
 function parseReports() {
     
     //Begin by making storage dirs in ./updated-reports for each site
@@ -199,41 +241,98 @@ function parseReports() {
                     for (key in data){
                         var reportXML = new jsxml.XML(data[key].XML);
                         var datasource = reportXML.child('datasources').child('datasource').child('connection').attribute("dbname");
-                        console.log("Report name: " + data[key].report + " Original DB Name: " + JSON.stringify(datasource.toString(),null, 2));
                         datasource.setValue(site.database);
                         console.log ("Report name: " + data[key].report + " Updated DB Name: " + JSON.stringify(datasource.toString(),null, 2));
                         //write file to correct folder
                         try
-                        {fs.writeFileSync("./updated-reports/" + site.siteName + "/" +data[key].report, reportXML.toXMLString())}
+                        // For some reason the jsxml library strips the XML version 1.0 attribute...so let's manually add it back 
+                        // Else, the workbook will be broken.
+                        {fs.writeFileSync("./updated-reports/" + site.siteName + "/" +data[key].report, 
+                            "<?xml version='1.0' encoding='utf-8' ?>" + reportXML.toString())}
                         catch(err){console.log(err);}
                         console.log(data[key].report + " written.");
                     }          
                 }) (_sites[site]); 
            }
+           console.log("All Reports Modified");
+           console.log("==============================================");
+           _sitesQueue = JSON.parse( JSON.stringify( _sites) ); // Queue of sites we'll process by popping values out of array as processed 
+           marshalWorkbooks();
        });
 }
 
-function loadReports (callback) {
-    var path = "./downloaded-reports/";
-    var reports = [];
+// Coordinates the publishing of x reports per y sites by calling tabCmdPublish as appropriate
+function marshalWorkbooks (){
 
-    
-    fs.readdir(path, function (err, files) {
-        if(err) throw err;
-        files.forEach(function(file) {
-            fs.readFile(path+file, function(err, data) {
-            if (err) throw err;    
-            reports.push({ report: file, XML: data.toString()});    
-            // Callback when all files processed  
-            if  (files.length == reports.length) callback(err, reports);
-            });  
-        });
-    });
 
+        if (_sitesQueue.length > 0) {
+            var site = _sitesQueue[0].siteName;
+            _sitesQueue.splice(0, 1);
+            tabCmdPublish(site, marshalWorkbooks);
+        } else {
+            console.log("Complete.");
+            console.log("==============================================");
+            console.log("==============================================");
+            process.exit(); }
 }
 
-function createSite(site, callback) 
-{
+// automates TabCmd to push a report to Tableau
+function tabCmdPublish (site, callback) {
+    siteName = site;
+    // Read files in folder for the site in question
+    try {
+        var files = fs.readdirSync("./updated-reports/" + siteName);        
+    }
+    catch (err)
+    {
+        console.log(err);
+    }
+    
+    var tabQ = queue();
+
+        files.forEach(function(file) {
+            (function (file) {
+                
+                //Queue each tabcmd exection.
+                tabQ.push ( function (cb) {   
+
+                    //Absolute path to workbook we want to publish
+                     var twbPath = path.dirname(fs.realpathSync(__filename)) + '\\updated-reports\\' + siteName + '\\' + file;
+
+                    argArray  = [];
+                    // Args to pass to exec module
+                    argArray.push('tabcmd');
+                    argArray.push('publish');
+                    argArray.push(twbPath);// + reportCollection.path);
+                    argArray.push('-p' + admin.password); // tab username
+                    argArray.push('-u' + admin.username); // tab password
+                    argArray.push('-t'+siteName); //site to publish to
+                    //First, TabCmd Publish
+                    exec( argArray, function(err, out, code) {
+                        if (err instanceof Error) throw err;
+                        process.stderr.write(err);
+                        process.stdout.write(out);
+                        cb();
+                    }); 
+                });
+            }) (file);
+          
+
+        });
+
+        
+        tabQ.start(function(err) {
+            console.log("==============================================");
+            console.log("All workbooks published for " + siteName);    
+            callback(); 
+        });
+    
+    
+}
+// ================== Helper Functions
+
+// Create sites based on default.json and populate with users found in \users directory
+function createSite(site, callback) {
     // tell Tableau to create a site
     tabrat.createsite(site.siteName, site.siteId).then ( 
         function (luid) {
@@ -252,8 +351,7 @@ function createSite(site, callback)
    );
 }
 
-function injectSiteLuid(siteName, luid)
-{
+function injectSiteLuid(siteName, luid) {
    
     // Record the new site Luid associated with the sites that have been created
     for (key in _sites) 
@@ -265,9 +363,8 @@ function injectSiteLuid(siteName, luid)
     
 }
 
-// take a username file and sitename and create an array of users that need to be loaded for the site
-var administerUsers = function(file, site, callback)
-{
+// Take a username file and sitename and create an array of users that need to be loaded for the site
+var administerUsers = function(file, site, callback) {
     fs.readFile(file, function(err, data) {
         if(err) throw err;
         var array = data.toString().split("\n");
@@ -275,20 +372,23 @@ var administerUsers = function(file, site, callback)
     });
 }
 
+// Start processing queue of users waiting to be added to Tableau Server
 var startQueue = function () {
-    
+        if (queueStarted==true) return
+        queueStarted=true;
         q.start(function(err) {
             tabrat.signout().then( function (){
                 console.log("logged out of Tableau");
                 console.log('All users created.');
-                process.exit(); 
+                console.log("==============================================");
+                // Queue is drained, begin publishing reports. 
+                getReports();
             });
         });
 }
 
 // recursively delete directory
-
-    rmDir = function(dirPath) {
+var rmDir = function(dirPath) {
       try { var files = fs.readdirSync(dirPath); }
       catch(e) { return; }
       if (files.length > 0)
@@ -300,4 +400,4 @@ var startQueue = function () {
             rmDir(filePath);
         }
       fs.rmdirSync(dirPath);
-    };
+}
