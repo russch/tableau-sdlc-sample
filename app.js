@@ -11,6 +11,7 @@ var request = require("request");
 var fs = require('fs');
 var Q = require( "q" );
 var queue = require('queue');
+var jsxml = require("node-jsxml");
 // tabrat reference
 var tabrat = require( "./tabrat" );
 
@@ -18,7 +19,8 @@ var tabrat = require( "./tabrat" );
 process.on('exit', function(code, signal) {
     console.log("Cleaning up temp files and exiting.");
     //Cleanup logic here
-    fs.readdir("./downloaded-reports", function (err, files) {
+/*    fs.readdir("./downloaded-reports/", function (err, files) {
+        console.log(files);
         if(err) throw err;
         files.forEach(function(file) {
             console.log(path+file);
@@ -26,7 +28,7 @@ process.on('exit', function(code, signal) {
                 console.log(stats);
             });
         });
-    });
+    });*/
 });
 
 //location of the git repo
@@ -38,8 +40,6 @@ var githubURI = appConfig.get('ServerConfig.gitRepo');
 var _sites = config.get('Sites');
 var _sitesQueue = JSON.parse( JSON.stringify( _sites) ); // Queue of sites we'll process by popping values out of the array as they are created
  
-// Will contain an array representing reports to be pulled from Github and saved locally
-var reports = [];
 
 // Github - pull reports down to the local machine for modification
 var client = github.client();
@@ -65,16 +65,17 @@ tabrat.settings( settings );
 // ====================== Logic
 
 // Start downloading reports from Github so they're ready to modify
-getReports();
+//getReports();
 
 
+setTimeout(function(){parseReports();},1000);
 
 //  Syncronous stuff begins HERE: signin, then process sites and users
-tabrat.signin().then( function( token ) {
+/*tabrat.signin().then( function( token ) {
 	console.log("Logged in: ", token);
     // create sites
     processSites();
-  });  
+  });  */
     
 
 function processSites() {
@@ -135,13 +136,13 @@ function processSites() {
 
 }
 
-
-
-
-// Helper Functions
+// ================== Helper Functions
 
 function getReports  ()
 {
+    // Will contain an array representing reports to be pulled from Github and saved locally
+    var reports = [];   
+    
     // What reports need to be brought down locally?
     client.get('/repos/russch/tableau-sdlc-sample/contents/reports', {}, function (err, status, body, headers) {
         reports = body;
@@ -173,6 +174,62 @@ function getReports  ()
                 }) (reports[report]);
         }
     });
+}
+
+function parseReports() {
+    
+    //Begin by making storage dirs in ./updated-reports for each site
+     for (key in _sites){
+        // Let's just do this synchronously for a chance 
+        try {
+            fs.mkdirSync("./updated-reports/" + _sites[key].siteName);
+        }
+         catch (err) {
+            console.log(err);
+         }
+     }
+        
+    
+    // For each site, load reports, switch data sources, then write them out. 
+    
+       loadReports( function(err, data) {   
+           for (site in _sites) {
+                (function (site) {      
+
+                    for (key in data){
+                        var reportXML = new jsxml.XML(data[key].XML);
+                        var datasource = reportXML.child('datasources').child('datasource').child('connection').attribute("dbname");
+                        console.log("Report name: " + data[key].report + " Original DB Name: " + JSON.stringify(datasource.toString(),null, 2));
+                        datasource.setValue(site.database);
+                        console.log ("Report name: " + data[key].report + " Updated DB Name: " + JSON.stringify(datasource.toString(),null, 2));
+                        //write file to correct folder
+                        try
+                        {fs.writeFileSync("./updated-reports/" + site.siteName + "/" +data[key].report, reportXML.toXMLString())}
+                        catch(err){console.log(err);}
+                        console.log(data[key].report + " written.");
+                    }          
+                }) (_sites[site]); 
+           }
+       });
+}
+
+function loadReports (callback) {
+    var path = "./downloaded-reports/";
+    var reports = [];
+
+    
+    fs.readdir(path, function (err, files) {
+        if(err) throw err;
+        files.forEach(function(file) {
+            fs.readFile(path+file, function(err, data) {
+            if (err) throw err;    
+            reports.push({ report: file, XML: data.toString()});    
+            // Callback when all files processed  
+            if  (files.length == reports.length) callback(err, reports);
+            });  
+        });
+    });
+
 }
 
 function createSite(site, callback) 
@@ -229,3 +286,18 @@ var startQueue = function () {
         });
 }
 
+// recursively delete directory
+
+    rmDir = function(dirPath) {
+      try { var files = fs.readdirSync(dirPath); }
+      catch(e) { return; }
+      if (files.length > 0)
+        for (var i = 0; i < files.length; i++) {
+          var filePath = dirPath + '/' + files[i];
+          if (fs.statSync(filePath).isFile())
+            fs.unlinkSync(filePath);
+          else
+            rmDir(filePath);
+        }
+      fs.rmdirSync(dirPath);
+    };
