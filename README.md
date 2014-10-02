@@ -5,7 +5,7 @@ An unsupported sample which demonstrates the process of provisioning new multi-t
 
 This is a node.js app which: 
 
-  - Reads config files to create sites and users on the server & site of your choice
+  - Reads a config file to create sites and users on the server & site of your choice
   - Pulls "template" reports from a source control system (github)
   - Updates each "template" report with site-specific information specified in the config file
   - Publishes each set of template reports to individual sites and servers
@@ -70,10 +70,11 @@ Notes
 ----
 Node is not the best tool for this sort of a demo. There, I said it. It can be difficult to force synchronous behavior on a platform that is made to live in an asynchronous world. The result is that some of the code here is overly complex. Sorry.
 
+ - tabcmd must be installed locally on the machine and must be in your box's PATH.
  - This code is not even close to being production-ready. Don't. Go. There.
- - Script assumes that none of the sites and/or users have been created on the server. 
+ - Script assumes that none of the sites and/or users have been created on the server. If they exist, delete them.
  - Script assumes that reports are connecting to SQL Server and use Windows auth. If you do things differently, you'll need to play with the tabCmdPublish() method and add/use the --db-username, --db-password, and potentially the --db-savepassword options.
-
+ - While you can configure things like "server", "protocol", and so forth, they aren't wired up into the code yet. 
 
 
 
