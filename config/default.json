@@ -8,7 +8,7 @@
     "Sites": [
         {
             "server": "wintableau",
-            "protocol" "http",
+            "protocol": "http",
             "siteName": "RedCorp",
             "siteId": "RedCorp",
             "database": "RedDB",
@@ -17,7 +17,8 @@
         }, 
         {
             "server": "wintableau",
-            "protocol" "http",
+            "protocol": "http",
+            "siteName": "WhiteCorp",
             "siteId": "WhiteCorp",
             "database": "WhiteDB",
             "users": "./users/whiteUsers.txt",
@@ -25,7 +26,8 @@
         },
         {
             "server": "wintableau",
-            "protocol" "http",
+            "protocol": "http",
+            "siteName": "BlueCorp",
             "siteId": "BlueCorp",
             "database": "BlueDB",
             "users": "./users/blueUsers.txt",
